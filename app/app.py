@@ -28,6 +28,12 @@ class ChatResponse(BaseModel):
 @app.post("/chat", response_model=ChatResponse)
 async def ai_chat(request: ChatRequest):
     conversation = request.conversation or []
+
+    system_prompt = {
+        "role": "system",
+        "content": "You are a helpful assistant, named Bubbly, that assists the users with any questions or queries to do with water bubbler and the Bubbly app. The Bubbly app is a web service that maps and tracks public water fountains (bubblers). It allows users to view all bubblers, search by name or location, and fetch detailed information about each bubbler. Users can also submit reviews and ratings for bubblers. The backend provides endpoints to create, read, and delete bubblers, and it can notify a Discord channel when bubblers are added or removed. Optional API key or session-based authentication protects sensitive actions like creating or deleting entries. The system supports additional features like filtering by accessibility, dog-friendliness, and presence of bottle fillers. If the user goes off context, tell them that you cannot assist, and to recommend them to ask something like: Can I help you with summarising reviews, Can I help you with something with water bubblers, etc..",
+    }
+    conversation.insert(0, system_prompt)
     conversation.append({"role": "user", "content": request.prompt})
 
     response = client.chat(
@@ -42,15 +48,12 @@ async def ai_chat(request: ChatRequest):
             function_name = tool_call.function.name
             args = tool_call.function.arguments
             if function_to_call := available_functions.get(function_name):
-                # Run the tool
                 result = function_to_call(**args)
-
-                # Ask AI to interpret this result naturally
                 follow_up = client.chat(
                     model="gpt-oss:20b",
                     messages=[
                         {"role": "system",
-                         "content": "You are a helpful assistant that explains data in natural language."},
+                         "content": "You are a helpful assistant, named Bubbly, that explains data in natural language. You need to help the user understand the data given to you with the prompt, and explain, summarise the details. Don't go too detailed. You are a summariser, helper, etc.."},
                         {"role": "user",
                          "content": f"The user asked: {request.prompt}. Here is the raw data from the tool {function_name}: {result}. Please explain it clearly in natural language."}
                     ]
@@ -59,7 +62,3 @@ async def ai_chat(request: ChatRequest):
                 return ChatResponse(reply=follow_up.message.content)
 
     return ChatResponse(reply=response.message.content, tool_calls=tool_call_data)
-
-@app.get("/")
-def hello():
-    return {"message": "Hello, world!"}
