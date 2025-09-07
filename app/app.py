@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional, Callable
 from ollama import Client
@@ -17,9 +18,21 @@ available_functions: Dict[str, Callable] = {
 
 app = FastAPI()
 
+origins = [
+    "https://bubbly.lkang.au",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class ChatRequest(BaseModel):
     prompt: str
-    conversation: Optional[List[Dict[str, str]]] = None  # Optional past messages
+    conversation: Optional[List[Dict[str, str]]] = None
 
 class ChatResponse(BaseModel):
     reply: str
