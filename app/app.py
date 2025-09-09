@@ -4,8 +4,8 @@ from pydantic import BaseModel
 from typing import Dict, Any, List, Optional, Callable
 from ollama import Client
 from utils.tools import (
-    get_reviews, get_info, get_top_bottom_bubblers,
-    get_reviews_tool, get_information_tool, get_top_bottom_tool
+    get_reviews, get_info,
+    get_reviews_tool, get_information_tool
 )
 
 client = Client(host='http://localhost:11434')
@@ -13,13 +13,13 @@ client = Client(host='http://localhost:11434')
 available_functions: Dict[str, Callable] = {
     'get_reviews': get_reviews,
     'get_info': get_info,
-    'get_top_bottom_bubblers': get_top_bottom_bubblers,
 }
 
 app = FastAPI()
 
 origins = [
     "https://bubbly.lkang.au",
+    "http://localhost:3400",
 ]
 
 app.add_middleware(
@@ -52,7 +52,7 @@ async def ai_chat(request: ChatRequest):
     response = client.chat(
         model="gpt-oss:20b",
         messages=conversation,
-        tools=[get_reviews_tool, get_information_tool, get_top_bottom_tool],
+        tools=[get_reviews_tool, get_information_tool],
     )
 
     tool_call_data = []
